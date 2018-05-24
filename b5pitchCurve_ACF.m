@@ -1,9 +1,9 @@
 clc;clear;close all
 cd C:\Users\User\Documents\MATLAB\Projects\birdsongQBH
-%a=audioread('samef0_difftimbres.wav'); fs=8000;
+a=audioread('samef0_difftimbres.wav'); fs=8000;
 %a=audioread('doReMe.wav'); fs=44100;
-a=audioread('00000_44k.mp3'); fs=44100;
-%sound(a,fs)
+%a=audioread('00000_44k.mp3'); fs=44100;
+sound(a,fs)
 
 % PREPROCESSING
 Wpp=fs*.1; % window length for preprocessing (last number is the length in seconds)
@@ -18,7 +18,6 @@ for nwin=1:floor(length(a)/Hpp)-1
     end
 end
 
-%%
 % PITCH ESTIMATION
 Wpc=fs*1; % window length for pitch-curve estimation
 Hpc=round(Wpc*.1); % hop factor for pitch-curve estimation
@@ -59,8 +58,9 @@ for nwin=1:Lpc-1 % 23 is a good example window
     else pc(nwin)=NaN;
     end
 end
-%%
+
 close all
 %pc=pc(Wpc/Hpc:end-1);
 plot(pc,'.-')
 %plot(t,pc)
+
