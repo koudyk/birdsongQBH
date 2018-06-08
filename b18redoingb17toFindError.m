@@ -1,4 +1,4 @@
-clc;clear;close all; clear sound
+clc;clear;%close all; clear sound
 addpath(genpath('F:\0.birdsongQBH\audio'))
 load('b8_output_audioData_withAonly.mat')
 d=recDetA; % structure with data information; recDet for recordings of quality A and B; recDetA for recordings of quality A only. 
@@ -20,7 +20,7 @@ aa{2}='short_veery.wav';
 aa{3}='short_mourningDove.wav';
 aa{4}=[num2str(d(1).id) '.wav'];
 
-for na=1:3
+for na=1%:3
     clear Pp Fp minFp Fy Fyp 
     p.maxf0=maxf0;
     p.minf0=minf0;
@@ -77,7 +77,7 @@ for na=1:3
     
 %% YIN
     out=yinK(afile,p); % run YIN
-    Fy=2.^out.good.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
+    Fy=2.^out.best.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
     Fy=Fy(1:length(Fp)); % the last numbers always seem to be a NaN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     tFy=linspace(tmin,tmax,length(Fy)); % time scale
         
@@ -103,10 +103,10 @@ for na=1:3
         p.minf0=minFp(nseg); % set minimum frequency to min prominent freq
         out=yinK(afile,p); % use YIN
         beg=nseg*ssize-ssize+1;
-        seg=out.good(beg:beg+ssize-1);
+        seg=out.best(beg:beg+ssize-1);
         Fyb=[Fyb seg];
     end
-    Fyb(end:length(Fp))=out.good(length(Fyb:length(Fp))); % use the minimum f0 from the last full segment to calculate the pitch curve for the portion of the file that doesn't fill a segment
+    Fyb(end:length(Fp))=out.best(length(Fyb:length(Fp))); % use the minimum f0 from the last full segment to calculate the pitch curve for the portion of the file that doesn't fill a segment
     Fyb=2.^Fyb.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
     Fyb=Fyb(1:length(Fp)); % there's an NaN at either end 
     tFyb=linspace(tmin,tmax,length(Fyb));
