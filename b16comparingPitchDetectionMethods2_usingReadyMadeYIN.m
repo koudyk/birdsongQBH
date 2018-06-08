@@ -17,12 +17,14 @@ fref=440; % reference frequency used by YIN to put the pitch curve in octaves
 len_sec=3; % sec; length of audio to work with
 vis=1; % visualize?
 id=325520;
-ws=[0.02 0.03 0.04];
+ws=[.005 .01 .02 .03 .04];
+ws=1;
+
 
 figure
 for na=find([d.id]==id)%43 % number of the audio file (in the d data structure)
 n=0; clf
-for nws=1:length(ws) 
+for nws=1%:length(ws) 
     wsize_sec=ws(nws);
     
     clear Pp Fp 
@@ -39,8 +41,9 @@ for nws=1:length(ws)
     afile='temp.wav';
     
 % PARAMETERS (SET ACCORDING TO FS)   
-    wsize=round(fs*wsize_sec);
-    hop=round(fs*wsize_sec/2);
+    wsize=floor(fs*wsize_sec);
+    wsize=300;
+    hop=floor(wsize/2);
     zp=round(wsize*1.5); % length of zero-padded window
     f=(fs*(0:(zp/2)-1)/zp)'; % Hz; frequency scale for the result of the FFT
     t=(1000*(0:wsize-1)/fs)'; % ms; time scale for window
@@ -64,43 +67,53 @@ for nws=1:length(ws)
      tFp=linspace(tmin,tmax,length(Fp));
      
      fscale=2;
-     % visualize
+     
      [ss,ff,tt,pp]=spectrogram(a,wsize,hop,wsize,fs); % spectrogram for background of images
-%      [m,i]=(max(pp));
+%      [m,i]=(max(pp)); % finding the prominent-frequency curve using the spectrogram
 %      i(m<mean(m))=NaN;
 %      plot(i)
      
      [fsize,tsize]=size(pp);
      pp=pp(1:floor(fsize/fscale),:);
-
+     
+     % visualize 
      row=length(ws); col=2;
      n=n+1; subplot(row,col,n)
-     imagesc([tmin tmax], [fmin fmax/fscale], 10*log10(pp)),hold on % spectrogram
-     set(gca(),'YDir','normal')
+     imagesc([tmin tmax], [fmin fmax/fscale], 10*log10(pp)),set(gca(),'YDir','normal'),hold on
      plot(tFp,Fp,'k.-','linewidth',.5),title(['wsize = ' num2str(wsize/fs*1000) ' ms'])
      if n==1, title({'Prominent f0';  ['wsize = ' num2str(wsize/fs*1000) ' ms']}), end
+     
 % YIN
-    % parameters
     p.minf0=f0min;
     p.maxf0=f0max;
     p.hop=floor(wsize/2);
     p.wsize=wsize;
-    
     out=yin(afile,p);
     Fy=2.^out.f0.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
     Fy=Fy(2:end-1); % there's an NaN at either end 
     tFy=linspace(tmin,tmax,length(Fy));
     
     % visualize
-    
     row=length(ws); col=2;
     n=n+1; subplot(row,col,n)
-    imagesc([tmin tmax], [fmin fmax/fscale], 10*log10(pp)),hold on % spectrogram
-    set(gca(),'YDir','normal')
+    imagesc([tmin tmax], [fmin fmax/fscale], 10*log10(pp)),set(gca(),'YDir','normal'),hold on
     plot(tFy,Fy,'k.-','linewidth',.5),title(['wsize = ' num2str(wsize/fs*1000) ' ms'])
     if n==2, title({'YIN';  ['wsize = ' num2str(wsize/fs*1000) ' ms']}),end
     
-% YIN-bird
+% YIN-BIRD
+    % STEP 1: calculate prominent-frequency curve, with values less
+    % than the mean prominent frequency set to NaN (done above, stored
+    % in 'Fp')
+    
+    % STEP 2: segment and determine minimum f0 in each segment.
+    % They suggest basing the segment size on the size of the  bird 
+    % corpus (i.e., based on execution time).
+    % They used a segment size of 3000 frames.
+    % If the segment is empty of prominent frequencies over the mean
+    % Fp, then the min for that segment is set as the nearest
+    % neighbour, with precedence given to the previous neighbour when
+    % neighbours are equally close. 
+    
     
 
 
@@ -110,3 +123,12 @@ end
    k=0;
    %k=waitforbuttonpress;
 end
+
+%%
+% clc;close all
+% ssize=floor(fs*0.068); % segment size; corresponds to 3000 frames for 44.1 kHz fs
+%     for nseg=1:(length(Fp)/ssize)
+%         beg=nseg*ssize-ssize+1;
+%         win=Fp(beg:beg+wsize-1);
+%         disp(length(win))
+%     end
