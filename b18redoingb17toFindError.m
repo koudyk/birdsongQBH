@@ -4,15 +4,15 @@ load('b8_output_audioData_withAonly.mat')
 d=recDetA; % structure with data information; recDet for recordings of quality A and B; recDetA for recordings of quality A only. 
 
 % PARAMETERS
-maxf0=8000; % Hz; lower frequency cutoff for band-pass
-minf0=200; % Hz; upper frequency cutoff for band-pass
+maxf0=8000; % Hz; upper frequency cutoff for band-pass
+minf0=200; % Hz; lower frequency cutoff for band-pass
 fref=440; % Hz; reference frequency used by YIN to put the pitch curve in octaves
 len_sec=3; % sec; length of audio to work with
 wsize_fprom_sec=.01; % sec; window size for calculating the prominent freuqncies
 wsize_yin_sec=.025; % sec; window size for YIN
 ssize_yinbird_sec=.15; % sec; segment size for setting the minimum f0 for YIN-bird
 n=0;
-ws=[.01]; % sec; window size(s) to try
+%ws=.01; % sec; window size(s) to try
 plotRow=3; plotCol=3;
 
 aa{1}='short_northernCardinal.wav';
@@ -51,7 +51,7 @@ for na=1%:3
     
     % for YIN
     p.wsize=floor(fs*wsize_yin_sec);
-    p.hop=hop;
+    p.hop=hop*2;
     
     % for YIN-bird
     ssize=floor(ssize_yinbird_sec*fs/hop);
@@ -76,8 +76,8 @@ for na=1%:3
     tFp=linspace(tmin,tmax,length(Fp)); % time scale
     
 %% YIN
-    out=yinK(afile,p); % run YIN
-    Fy=2.^out.best.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
+    out=yin_k(afile,p); % run YIN
+    Fy=2.^out.good.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
     Fy=Fy(1:length(Fp)); % the last numbers always seem to be a NaN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     tFy=linspace(tmin,tmax,length(Fy)); % time scale
         
@@ -101,12 +101,12 @@ for na=1%:3
             minFp(nseg)=minFp(nonZero(nn))-2; % set minimum frequency; subtract 2 to account for discretization of frequency
         end
         p.minf0=minFp(nseg); % set minimum frequency to min prominent freq
-        out=yinK(afile,p); % use YIN
+        out=yin_k(afile,p); % use YIN
         beg=nseg*ssize-ssize+1;
-        seg=out.best(beg:beg+ssize-1);
+        seg=out.good(beg:beg+ssize-1);
         Fyb=[Fyb seg];
     end
-    Fyb(end:length(Fp))=out.best(length(Fyb:length(Fp))); % use the minimum f0 from the last full segment to calculate the pitch curve for the portion of the file that doesn't fill a segment
+    Fyb(end:length(Fp))=out.good(length(Fyb:length(Fp))); % use the minimum f0 from the last full segment to calculate the pitch curve for the portion of the file that doesn't fill a segment
     Fyb=2.^Fyb.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
     Fyb=Fyb(1:length(Fp)); % there's an NaN at either end 
     tFyb=linspace(tmin,tmax,length(Fyb));
