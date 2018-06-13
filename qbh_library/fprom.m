@@ -44,13 +44,13 @@ zp=2^nextpow2(wsize); % frames; size of zerp-padded window
 hop=floor(wsize*hop); % frames;
 Nwin=floor((length(a)-(wsize-hop))/hop); % total number of windows that fit in the waveform
 fscale=(fs*(0:zp/2-1)/zp)'; % Hz; frequency scale correponding to the single-sided power spectrum 
-tmax=wsize*Nwin/fs;
+tmax=wsize*Nwin/fs; 
 
 % frequency filter    
 [~,fmax_i]=min(abs(fscale-fmax)); % upper cut-off for band-pass frequency filter
 [~,fmin_i]=min(abs(fscale-fmin)); % lower cut-off for band-pass frequency filter
-filt=ones(length(fscale),1);
-filt(1:fmin_i)=0; filt(fmax_i:end)=0;
+filt=zeros(length(fscale),1);
+filt(fmin_i:fmax_i)=ones;
 
 % CALCULATE PROMINENT-FREQUENCY CURVE
 for nwin=1:Nwin % 208
@@ -58,7 +58,7 @@ for nwin=1:Nwin % 208
     win=a(beg:beg+wsize-1); % window of waveform for calculating prominent frequency
     p2=abs(fft(win,zp)); % 2-sided power spectrum
     p1=p2(1:floor(length(p2)/2)); % single-sided poser spectrum
-    p1f=p1.*filt; % set too-low and too-high frequencies to 0;
+    p1=p1.*filt; % set too-low and too-high frequencies to 0;
     if nargout>2, sg(:,nwin)=p1; end % if they want to see the spectrogram, store the frequency spectrum for each window
     if sum(p1)>0
         [P_prom(nwin),i]=max(p1); % store power of max-power frequency
