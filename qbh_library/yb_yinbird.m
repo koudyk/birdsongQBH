@@ -1,4 +1,36 @@
-function [ F_yb,T,fig ] = yb_yinbird( audio,fs,qual,p,ssize_sec,fmin_hz,fmax_hz,wsize_sec,hop_pwin )
+function [ f0_yb,T,fig ] = yb_yinbird( audio,fs,quality,p,ssize_sec,fmin_hz,fmax_hz,wsize_sec,hop_pwin )
+%	YB_YINBIRD calculates the pitch curve for birdsong, 
+%   implementing YIN-bird (O'Reilley & Harte, 2017).	
+%				
+%	OUTPUTS (variable - (units) description)			
+%	f0_yb     - (Hz) f-by-1 vector of fundamental-frequency 
+%               values (f0) estimated with YIN-bird.
+%	T         - (sec) t-by-1 vector of time values for the pitch curve.
+%	fig       - outputs a figure with the pitch curve and the 
+%               minimum-frequency curve overlayed over the spectrogram 
+%               for the given file.
+%				
+%	INPUTS			
+%	audio     -  audio file (in a format readable by the audioread 
+%                funciton) or as a waveform (in which case you must 
+%                input the sampling rate fs)
+%	fs        -  (samples) sampling rate of the audio file
+%	quality	  -  quality of the pitch curve. 
+%                   1 = good (default)
+%                   2 = best
+%                   0 = raw (i.e., includes pitch estimates at times 
+%                       when the signal is deemed aperiodic)
+%	ssize_sec -  (sec) segments size. The pitch curve will for 
+%                the audio within a given segment will be 
+%                determined by YIN using the minimum-frequency 
+%                determined as the minimum prominent frequency 
+%                for that segment.
+%	fmin_hz   -  (Hz) minimum of frequency range.
+%	fmax_hz   -  (Hz) maximum of frequency range.
+%	wsize_sec -  (sec) window size for calculating the frequency-power spectrum 
+%	hop_pwin  -  (percent of window size) hop value.
+
+
     if ischar(audio)
     [a,fs]=audioread(audio);
     else a=audio;
@@ -7,14 +39,15 @@ function [ F_yb,T,fig ] = yb_yinbird( audio,fs,qual,p,ssize_sec,fmin_hz,fmax_hz,
     a=mean(a,2); % take mean of the two channels if there are 2 
     if nargin<9|| isempty(hop_pwin), hop_pwin=.5; end % proportion of window size; hop factor
     if nargin<8 || isempty(wsize_sec), wsize_sec=.01; end % sec; window size
-    if nargin<7 || isempty(fmax_hz), fmax_hz=8000; end % Hz; max frequency
+    if nargin<7 || isempty(fmax_hz), fmax_hz=fs/2; end % Hz; max frequency
     if nargin<6 || isempty(fmin_hz), fmin_hz=30; end % Hz; min frequency (recommended by YIN-bird (O'Reilley & Harte, 2017))
-    if nargin<5 || isempty(ssize_sec), ssize_sec=.15; end % sec; segment size for dynamically setting the minimum f0 for YIN
-    if nargin<4 || isempty(qual),qual=2; end % quality; 1='good', 2='best', 0=raw (including pitch estimates at times when the signal is deemed aperiodic)
+    if nargin<5 || isempty(ssize_sec), ssize_sec=.068; end % sec; segment size for dynamically setting the minimum f0 for YIN
+    if nargin<4 || isempty(quality),quality=2; end % quality; 1='good', 2='best', 0=raw (including pitch estimates at times when the signal is deemed aperiodic)
+    
     wsize=floor(fs*wsize_sec); p.wsize=wsize;% samples; window size
     hop=floor(wsize*hop_pwin); p.hop=hop; % samples; hop
     Nwin=floor( (length(a)-(wsize-hop))/hop); % number of windows that fit into the audio
-    T=linspace(0,p.hop*Nwin/fs,Nwin); % sec; time information for spectrogram
+    T=linspace(0,hop*Nwin/fs,Nwin); % sec; time info for the spectrogram
     fref=440; % Hz; reference frequency used by YIN to put the pitch curve in octaves
 
 % MINIMUM-FREQUENCY CURVE FOR YIN
@@ -31,15 +64,15 @@ function [ F_yb,T,fig ] = yb_yinbird( audio,fs,qual,p,ssize_sec,fmin_hz,fmax_hz,
         out=yin_k(audio,p);
         
         % select pitch curve correponding to the desired quality
-        if qual==1, f0=out.good;
-        elseif qual==2, f0=out.best;
-        elseif qual==0, f0=out.f0;
+        if quality==1, f0=out.good;
+        elseif quality==2, f0=out.best;
+        elseif quality==0, f0=out.f0;
         end
         f0s(nUminf0,:)=f0(1:length(minf0_hop));
     end
 
 % PIECE TOGETHER FINAL PITCH CURVE USING THE PITCH CURVE THAT WAS GENERATED WITH THE SEGMENT'S MIN F0 
-    F_yb=[];
+    f0_yb=[];
     Nseg=floor(length(minf0_hop)/ssize_hop); % total number of segments that fit into the prominent-frequency curve     
     for nseg=1:Nseg
         
@@ -48,11 +81,11 @@ function [ F_yb,T,fig ] = yb_yinbird( audio,fs,qual,p,ssize_sec,fmin_hz,fmax_hz,
         f0=f0s(i,:); % pitch curve that was calculated with the desired min f0
         beg=nseg * ssize_hop - ssize_hop + 1;
         seg=f0(beg : beg + ssize_hop - 1);
-        F_yb=[F_yb seg];
+        f0_yb=[f0_yb seg];
     end
-    F_yb(end:length(minf0_hop))=out.good(length(F_yb:length(minf0_hop))); % use the minimum f0 from the last full segment to calculate the pitch curve for the portion of the file that doesn't fill a segment
-    F_yb=2.^F_yb.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
-    F_yb=F_yb(1:length(minf0_hop)); % there's an NaN at the end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%not sure why or if this is the right way to deal with it %%%%%%%%%%%%
+    f0_yb(end:length(minf0_hop))=out.good(length(f0_yb:length(minf0_hop))); % use the minimum f0 from the last full segment to calculate the pitch curve for the portion of the file that doesn't fill a segment
+    f0_yb=2.^f0_yb.*fref; % convert YIN's pitch curve from octaves relative to 440 Hz to Hz. 
+    f0_yb=f0_yb(1:length(minf0_hop)); % there's an NaN at the end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%not sure why or if this is the right way to deal with it %%%%%%%%%%%%
     
     if nargout==3
         [P,F,T]=yb_spectrogram(audio,fs,fmin_hz,fmax_hz,wsize_sec,hop_pwin  );
@@ -61,6 +94,6 @@ function [ F_yb,T,fig ] = yb_yinbird( audio,fs,qual,p,ssize_sec,fmin_hz,fmax_hz,
         % visualize
         fig=yb_spectrogram_fig(P,F,T); % spectrogram
         hold on, plot(T,minf0_hop)
-        hold on, plot(T,F_yb,'linewidth',2)
+        hold on, plot(T,f0_yb,'linewidth',2)
     end
 end
