@@ -52,36 +52,39 @@ for nspec=1:length(names);
     ndwnld=1;
     nrec=0;
     while ndwnld<=Ndwnld
-        nrec=nrec+1;
-        clc,disp(['--------------species ' num2str(nspec) '/' num2str(length(names)) ' - recording ' num2str(ndwnld) '/' num2str(Ndwnld)])
-        html=webread(r.recordings(nrec).url); % download html
-        r.recordings(nrec).fs=str2double( html(  strfind(html,fsBefore)+length(fsBefore)  :  strfind(html,fsAfter)  ) ); % sampling rate
-       % r.recordings(nrec).dwnld=0; % assume the audio file wasn't downloaded until it is
+        while nrec<=length(r.recordings), 
+            nrec=nrec+1;
+            disp(['--------------species ' num2str(nspec) '/' num2str(length(names)) ' - recording ' num2str(ndwnld) '/' num2str(Ndwnld)])
+            disp(['nrec=' num2str(nrec)])
+            disp(['ndwnld=' num2str(ndwnld)])
+            html=webread(r.recordings(nrec).url); % download html
+            r.recordings(nrec).fs=str2double( html(  strfind(html,fsBefore)+length(fsBefore)  :  strfind(html,fsAfter)  ) ); % sampling rate
+           % r.recordings(nrec).dwnld=0; % assume the audio file wasn't downloaded until it is
 
 % determine whether there are background species in the recording; this info is not in the json, but it is on the html page for the given recording
-        if isempty(strfind(html,noBkgdSp)) % if the line indicating no background species is not found in the html (i.e., if there are background species)
-            r.recordings(nrec).bkgd=1; % 1 indicates presence of background species 
-            r.recordings(nrec).dwnld=0; % the audio file wasn't downloaded (on purpose, because there are backgound species)  
-        else % if there were no background species
-            r.recordings(nrec).bkgd=0; % 0 indicates no background species (at least, none indicated)  
+            if isempty(strfind(html,noBkgdSp)) % if the line indicating no background species is not found in the html (i.e., if there are background species)
+                r.recordings(nrec).bkgd=1; % 1 indicates presence of background species 
+                r.recordings(nrec).dwnld=0; % the audio file wasn't downloaded (on purpose, because there are backgound species)  
+            else % if there were no background species
+                r.recordings(nrec).bkgd=0; % 0 indicates no background species (at least, none indicated)  
 
 % download file
-            filewav=[r.recordings(nrec).id '.wav']; % name for the .wav file
-            URL=['https:' r.recordings(nrec).file]; % URL where the audio can be downloaded from
-            system(['wget ' URL ]); % get audio file located at that URL
-            if ~exist([wgetDir '\download'], 'file')==0 % if the audio file was successfully downloaded
-                r.recordings(nrec).dwnld=1; % 1 indicates the audio was downloaded
-                audio=audioread('download');
-                r.recordings(nrec).sec=length(audio)/r.recordings(nrec).fs; % length of the audio file, in seconds
-                audiowrite(filewav,audio,r.recordings(nrec).fs) % convert to .wav file
-                system(['move ' filewav ' ' dwnldDir '\' folder '\' filewav ]); % move to destination folder (for some reason, I can't use wget unless the .exe file in the current directory, so I'd have to put it in each destination folder if I didn't want to change folders)
-                delete('download') % delete file from folder with wget.exe file 
-                r.recordings(nrec).id=str2double(r.recordings(nrec).id); % change id from a string to a number
-                ndwnld=ndwnld+1;
-            else r.recordings(nrec).dwnld=0; % the audio file wasn't downloaded (because of some error)
-            end                
-        end
-            
+                filewav=[r.recordings(nrec).id '.wav']; % name for the .wav file
+                URL=['https:' r.recordings(nrec).file]; % URL where the audio can be downloaded from
+                system(['wget ' URL ]); % get audio file located at that URL
+                if ~exist([wgetDir '\download'], 'file')==0 % if the audio file was successfully downloaded
+                    r.recordings(nrec).dwnld=1; % 1 indicates the audio was downloaded
+                    audio=audioread('download');
+                    r.recordings(nrec).sec=length(audio)/r.recordings(nrec).fs; % length of the audio file, in seconds
+                    audiowrite(filewav,audio,r.recordings(nrec).fs) % convert to .wav file
+                    system(['move ' filewav ' ' dwnldDir '\' folder '\' filewav ]); % move to destination folder (for some reason, I can't use wget unless the .exe file in the current directory, so I'd have to put it in each destination folder if I didn't want to change folders)
+                    delete('download') % delete file from folder with wget.exe file 
+                    r.recordings(nrec).id=str2double(r.recordings(nrec).id); % change id from a string to a number
+                    ndwnld=ndwnld+1;
+                else r.recordings(nrec).dwnld=0; % the audio file wasn't downloaded (because of some error)
+                end                
+            end
+        end  
     end
     recMeta(nspec).T_sec=sum([r.recordings.sec]); % total seconds of audio for each spes
     %recMeta(nspec).N_noDwnld_bkgd=sum([r.recordings.bkgd]); % number of recordings with background species (not downloaded)
