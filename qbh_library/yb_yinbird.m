@@ -42,14 +42,15 @@ function [ f0_yb,T,fig ] = yb_yinbird( audio,fs,quality,p,ssize_sec,fmin_hz,fmax
     if nargin<7 || isempty(fmax_hz), fmax_hz=fs/2; end % Hz; max frequency
     if nargin<6 || isempty(fmin_hz), fmin_hz=30; end % Hz; min frequency (recommended by YIN-bird (O'Reilley & Harte, 2017))
     if nargin<5 || isempty(ssize_sec), ssize_sec=.068; end % sec; segment size for dynamically setting the minimum f0 for YIN
-    if nargin<4 || isempty(quality),quality=2; end % quality; 1='good', 2='best', 0=raw (including pitch estimates at times when the signal is deemed aperiodic)
+    if nargin<3 || isempty(quality),quality=1; end % quality; 1='good', 2='best', 0=raw (including pitch estimates at times when the signal is deemed aperiodic)
     
     wsize=floor(fs*wsize_sec); p.wsize=wsize;% samples; window size
     hop=floor(wsize*hop_pwin); p.hop=hop; % samples; hop
     Nwin=floor( (length(a)-(wsize-hop))/hop); % number of windows that fit into the audio
     T=linspace(0,hop*Nwin/fs,Nwin); % sec; time info for the spectrogram
     fref=440; % Hz; reference frequency used by YIN to put the pitch curve in octaves
-
+    p.sr=fs;
+    
 % MINIMUM-FREQUENCY CURVE FOR YIN
     [minf0_hop,minf0_seg,T_minf0_seg] = yb_minf0( audio,fs,ssize_sec,fmin_hz,fmax_hz,wsize_sec,hop_pwin  );
     ssize_hop=T_minf0_seg(2)-T_minf0_seg(1); % hops (i.e., spectrogram time points); segment size
