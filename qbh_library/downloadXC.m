@@ -1,4 +1,4 @@
-function [ recDet, recMeta ] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity )
+function [ recDet, recMeta ] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity,nums )
 %downloadXC 
     % Downloads audio from Xeno-Canto for given bird species and given
     % type of vocalization and quality of recording.
@@ -34,7 +34,7 @@ fsAfter=' (Hz)</td></tr>'; % text after the sampling rate in the html of the giv
 
 for nspec=1:length(names);
     n=strsplit(names{nspec});
-    folder='spc';
+    folder=['spc' num2str(nums(nspec))];
     name_for_URL=[]; % species name (input) for the URL (i.e., with spaces replaced by '%20')
     for nn=1:length(n) 
         folder=[folder '_' n{nn}]; % replace spaces in the bird names with '_' 
@@ -78,7 +78,7 @@ for nspec=1:length(names);
                         r.recordings(nrec).fs=str2double( html( ... % sampling rate
                             strfind(html,fsBefore)+length(fsBefore)  : ...
                             strfind(html,fsAfter)  ) ); 
-                        filewav=[r.recordings(nrec).id '.wav']; % name for the .wav file
+                        filewav=['spc' num2str(nums(nspec)) '_xc' num2str(r.recordings(nrec).id) '.wav']; % name for the .wav file
                         audiowrite(filewav,audio,r.recordings(nrec).fs) % convert to .wav file
                         system(['move ' filewav ' ' dwnldDir '\' folder '\' filewav ]); % move to destination folder (for some reason, I can't use wget unless the .exe file in the current directory, so I'd have to put it in each destination folder if I didn't want to change folders)
                         delete('download') % delete file from folder with wget.exe file 
