@@ -1,5 +1,4 @@
 function [ segs ] = segmentAudio( audio,annotation,saveSegments,fs )
-%UNTITLED2 Summary of this function goes here
 % INPUTS
 %   audio - waveform or audio file (in format readable by audioread)
 %   SVannotation - Sonic Visualizer regions annotation layer text file.
@@ -9,7 +8,7 @@ function [ segs ] = segmentAudio( audio,annotation,saveSegments,fs )
 %           rows  - segments
 %   fs - audio sampling rate (samples/sec). This is only needed if 
 %           'audio' is a waveform, not an audio file
-%   saveSegments - 1: save segments as waveform .m files
+%   saveSegments - 1: save segments as waveform .mat files
 %          0: don't save
 %
 % OUTPUTS
@@ -43,7 +42,7 @@ for nseg=1:Nseg
     seg=a(begs(nseg):fins(nseg));
     segs{nseg,1}=seg;
     if saveSegments==1, 
-        fileName= ['s' annotation(1:end-4) '_' num2str(nseg) '_' num2str(fs)];
+        fileName= ['SEG_' annotation(1:end-4) '_' num2str(nseg) '_' num2str(fs)];
         save(fileName,'seg')
     end
     
