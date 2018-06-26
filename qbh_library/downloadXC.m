@@ -1,26 +1,37 @@
-function [meta] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity,nums,targetFs )
+function [meta] = downloadXC( wgetDir, dwnldDir,basic,nums,advanced,targetFs,maxQuantity)
+
 %downloadXC 
 % Downloads audio from Xeno-Canto for given bird species and given
 % type of vocalization and quality of recording.
 % NOTE: this function requires the 'wget' function used by the
 % Windows Command Prompt to download the contents of a webpage.
 %
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % INPUTS
 % wgetDir = directory with the wget.exe file
 % dwnldDir = directory where the audio will be downloaded to
-% names = cell array of species names (scientific or common)
-% type = type of vocalization (call, song, )
-% quality = quality of recording; the quality will be greater than the letter provided(A, B, C, D)
-% maxNum = maximum number of recordings to be downloaded
-% nums = vector of species numbers
+% basic = cell array of basic queries (one query per cell).
+        % A separate search will be run for each cell. 
+        % Can be anything allowed in the 'Basic Queries' section of 
+        % https://www.xeno-canto.org/help/search
+        % e.g., {'black-capped chickadee' 'tinamus' 'Geothlypis trichas'}
+% nums = vector of numerical identifiers for each basic search
+        % e.g., [44 22 4]
+        % By default, the basic searches will be numbered in the order
+        % they appear, as in [1 2 3]
+% advanced = cell array of advanced query fields (one term per cell).
+        % These search parameters will be applied to all basic
+        % searches (e.g., all species in 'basic'). 
 % targetFs = desired audio sampling rate
-%    
+% maxQuantity = maximum number of recordings to be downloaded
+%
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
 % OUTPUTS
 % meta.recordings = metadata structure with information from the JSON from the
     % Xeno Canto search, as well as additional information 
 % meta.species = metadata structure with info about all recordings for
     % each species
-%    
+%%   
 % meta.species = information about all the recordings for the given species
 % meta.species.num_dwnld = number of audio files downloaded
 % meta.species.total_time_sec = (sec) total time of downloaded audio
@@ -32,7 +43,7 @@ function [meta] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity,n
 % meta.species.noDwnld_overMaxQuanity = number of files that were not 
     % downloaded because the desired maximum quantity had already 
     % beenreachemeta.
-%
+%%
 % meta.recordings = information about each recording
 % meta.recordings.id = ID number from Xeno Canto
 % meta.recordings.gen = genus
@@ -64,14 +75,18 @@ function [meta] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity,n
     % only for those files that were actually downloademeta.
 %
 % created by Kendra Oudyk 05.2018
-if nargin<8 || isempty(targetFs), targetFs=44100; end
-if nargin<7 || isempty(nums), nums = 1:length(names); end
-if nargin<6 || isempty(maxQuantity), maxQuantity=Inf; end
-if nargin<5 || isempty(quality), quality = 'C'; end
-if nargin<4 || isempty(type), type = 'song'; end
 
-Nspec=length(names);
+
+
+if nargin<8 || isempty(targetFs), targetFs=44100; end
+if nargin<7 || isempty(nums), nums = 1:length(basic); end
+if nargin<6 || isempty(maxQuantity), maxQuantity=Inf; end
+% if nargin<5 || isempty(quality), quality = 'C'; end
+% if nargin<4 || isempty(type), type = 'song'; end
+
+Nspec=length(basic);
 cd(wgetDir)
+weboptions('Timeout',60); % (sec) set web timeout to longer time
 
 % strings to search for in the html for the given recording's webpage
 noBkgdSp='Background</td><td valign=''top''>none'; % if there are no background species in the recording, this string will be found in the html of the given recording's webpage
@@ -80,22 +95,19 @@ fsAfter=' (Hz)</td></tr>'; % text after the sampling rate in the html of the giv
 
 for nspec=1:Nspec;
     
-% MAKE SPECIES FOLDER AND FORMAT SPECIES NAME SO IT CAN GO IN THE API URL
-    folder=sprintf('spc%02d', nums(nspec));
-    n=strsplit(names{nspec});
-    name_for_URL=[]; % species name (input) for the URL (i.e., with spaces replaced by '%20')
-    for nn=1:length(n) 
-        folder=[folder '_' n{nn}]; % replace spaces in the bird names with '_' 
-        name_for_URL=[name_for_URL n{nn} '%20']; % the '%20' puts a space in the search. Essentially this line replaces the spaces between words in the name with '%20'
-    end
+% MAKE SPECIES FOLDER (i.e., one folder for each cell in 'basic')
+    basic_split = strsplit(basic{nspec});
+    folder=[sprintf('spc%02d_', nums(nspec)) strjoin(basic_split,'_')];  
     mkdir(dwnldDir, folder)  % folder for audio from given species
     
 % GET JSON FOR THE GIVEN SEARCH
     URL_json=['https://www.xeno-canto.org/api/2/recordings?query='... % URL for the json of the list of recordings
-        name_for_URL 'type:' type '%20q>:' quality];
-    
+        strjoin([basic_split advanced],'%20')];
     i=webread(URL_json);
+    
+    %%%%%%%% make conditional on inclusion of a quality specification in the advanced search terms
     i.recordings(cellfun('isempty',strfind({i.recordings.q},'no score'))==0)=[]; % exclude recordings with no quality rating
+    %%%%%%%%%%%%%
     
 % (INITIALIZE VARIABLES)
     Nrec=length(i.recordings);
