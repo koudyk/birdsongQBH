@@ -52,12 +52,8 @@ function [meta] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity,n
     % quality) to E (lowest quality)
 % meta.recordings.time = time of day when the recording was taken
 % meta.recordings.date = date of recording
-% meta.recordings.extra = 1 if above the desired maximum quantity 
-    % of recordings (not downloaded)
 % meta.recordings.bkgd = 1 if the recording's webpage indicated the
     % presence of background species in the recording (not downloaded)
-% meta.recordings.error = 1 if there was an error during download
-    % (not downloaded)
 % meta.recordings.dwnld = 1 if successfully downloaded
 % i.recordings.originalFs = original sampling rate of the recording
 % i.recordings.currentFs = sampling rate of the downloaded audio
@@ -68,7 +64,7 @@ function [meta] = downloadXC( wgetDir, dwnldDir,names,type,quality,maxQuantity,n
     % only for those files that were actually downloademeta.
 %
 % created by Kendra Oudyk 05.2018
-if nargin<8 || isempty(setFs), targetFs=44100; end
+if nargin<8 || isempty(targetFs), targetFs=44100; end
 if nargin<7 || isempty(nums), nums = 1:length(names); end
 if nargin<6 || isempty(maxQuantity), maxQuantity=Inf; end
 if nargin<5 || isempty(quality), quality = 'C'; end
@@ -96,7 +92,8 @@ for nspec=1:Nspec;
     
 % GET JSON FOR THE GIVEN SEARCH
     URL_json=['https://www.xeno-canto.org/api/2/recordings?query='... % URL for the json of the list of recordings
-        name_for_URL 'type:' type '%20q>:' quality]; 
+        name_for_URL 'type:' type '%20q>:' quality];
+    
     i=webread(URL_json);
     i.recordings(cellfun('isempty',strfind({i.recordings.q},'no score'))==0)=[]; % exclude recordings with no quality rating
     
@@ -109,9 +106,7 @@ for nspec=1:Nspec;
             nspec,Nspec,   nrec,Nrec,   ndwnld,Ndwnld)
         i.recordings(nrec).id=str2double(i.recordings(nrec).id); % change id from a string to a number
         i.recordings(nrec).spc=nums(nspec);
-        i.recordings(nrec).extra=0;
         i.recordings(nrec).bkgd=0;
-        i.recordings(nrec).error=0;
         i.recordings(nrec).dwnld=0;
         
         if ndwnld<=Ndwnld % if it isn't over the desidred number of files
@@ -138,22 +133,24 @@ for nspec=1:Nspec;
                         strfind(html,fsBefore)+length(fsBefore)  : ...
                         strfind(html,fsAfter)  ) ); 
                     i.recordings(nrec).currentFs=targetFs;
-                    filewav=sprintf('spc%02d_xc%08i.wav', nums(nspec), i.recordings(nrec).id ); % name for the .wav file
-                    audio=resample(audio,targetFs,i.recordings(nrec).originalFs);
+                    if i.recordings(nrec).originalFs ~= targetFs, % if the recording's sampling rate is not the target sample rate
+                        audio=resample(audio,targetFs,i.recordings(nrec).originalFs); 
+                    end
                     
-% SAVE AS .WAV IF IT DOWNLOADS
+% SAVE AS .WAV FILE
+                    filewav=sprintf('spc%02d_xc%08i.wav', nums(nspec), i.recordings(nrec).id ); % name for the .wav file
                     audiowrite(filewav,audio,targetFs) % convert to .wav file
                     system(['move ' filewav ' ' fullfile(dwnldDir,folder,filewav)]); % move to destination folder (for some reason, I can't use wget unless the .exe file in the current directory, so I'd have to put it in each destination folder if I didn't want to change folders)
                     delete('download') % delete file from folder with wget.exe file 
 
 % METADATA - RECORDINGS  
                     i.recordings(nrec).dwnld=1; % 1 indicates the audio was downloaded
-                    i.recordings(nrec).sec=length(audio)/i.recordings(nrec).fs; % length of the audio file, in seconds
-                else disp('error'),i.recordings(nrec).error=1; % the audio file wasn't downloaded because of some error
+                    i.recordings(nrec).sec=length(audio)/i.recordings(nrec).currentFs; % length of the audio file, in seconds
+                else disp('error') % the audio file wasn't downloaded because of some error
                 end % no error?  
 %             else disp('background species'), i.recordings(nrec).bkgd=1; % 1 indicates presence of background species
 %             end % no bkgrnd?
-        else disp('extra'),i.recordings(nrec).extra=1; % it was because there were already enough files downloaded
+        else disp('extra') % it was because there were already enough files downloaded
         end % <=Ndwnld? 
     end % nrec
 
