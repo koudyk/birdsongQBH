@@ -12,20 +12,20 @@ Nspec=length(list_spec);
 ncol = 2; % number of columns in figure
 quality = 1;
 figure
-for nspec=1:Nspec
+for nspec=1%:Nspec
     folder=list_spec(nspec).name;
     cd(fullfile(exhard_x2,folder))
     list_audioSeg=dir('sp*');
     spec=folder(5:end);
     
-    for naudio=30%:length(list_audioSeg)
+    for naudio=1%:length(list_audioSeg)
         file = list_audioSeg(naudio).name;
         load(file); a=seg;
         temp = strsplit(file,'_');
         fs = str2double( temp{3}(1:end-4) );
         id = str2double( temp{1}(3:end) );
         
-        subplot(ceil(Nspec/ncol),ncol,nspec)
+        %subplot(ceil(Nspec/ncol),ncol,nspec)
         [~,~,fig]=yb_yinbird(a,fs,quality);
         title(spec)
         

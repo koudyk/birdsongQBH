@@ -43,15 +43,19 @@ function [ minf0_hop, minf0_seg,T_minf0_seg,Fprom_hop] = yb_minf0( audio,fs,ssiz
     if nargin<3 || isempty(ssize_sec), ssize_sec=.068; end % sec; segment size for dynamically setting the minimum f0 for YIN
     
 % PROMINENT-FREQUENCY CURVE
-    [Psp,Fsp,Tsp]=yb_spectrogram(audio,fs,fmin_hz,fmax_hz,wsize_sec,hop_pwin );
-    hop_sec=Tsp(2)-Tsp(1); % sec; spectrogram hop size (i.e., seconds to one time value in spectrogram)
+    %[Psp,Fsp,Tsp]=yb_spectrogram(audio,fs,fmin_hz,fmax_hz,wsize_sec,hop_pwin );
+    wsize=floor(wsize_sec*fs);
+    hop=floor(wsize*hop_pwin);
+    [~,F,T,P]=spectrogram(a,wsize,hop,wsize,fs);
+    hop_sec=T(2)-T(1); % sec; spectrogram hop size (i.e., seconds to one time value in spectrogram)
     %hop_samples=floor(hop_sec*fs); % audio samples; spectrogram hop size (i.e., audio samples to one time value in spectrogram)
     fs_sp=1/hop_sec;
-    [Pprom,i]=nanmax(Psp);
-    Fprom_hop=Fsp(i);
-    Pprom(Pprom<0)=NaN;
-    Fprom_hop(Pprom<(nanmean(Pprom)))=NaN;  
-
+    [Pprom,i]=nanmax(P);
+    Fprom_hop=F(i);
+    Pprom(Pprom<0)=NaN; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Fprom_hop(Pprom<(nanmean(Pprom)-std(Pprom,'omitnan')))=NaN;  
+    %Fprom_hop(Pprom<(nanmean(Pprom)))=NaN; 
+    
 % MINIMUM PROMINENT FREQUENCY FOR EACH SEGMENT
     ssize=floor(fs_sp*ssize_sec); % hops (i.e, spectrogram time points); segment size
     Nseg=floor(length(Fprom_hop)/ssize); % total number of segments that fit into the prominent-frequency curve     
@@ -65,7 +69,7 @@ function [ minf0_hop, minf0_seg,T_minf0_seg,Fprom_hop] = yb_minf0( audio,fs,ssiz
         T_minf0_seg(nseg)=beg;
     end
     minf0_seg=floor(minf0_seg/100)*100; % round to nearest 100 Hz
-    minf0_seg=minf0_seg-5; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    minf0_seg=minf0_seg; % to account for the discretization of frequency into bins %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     minf0_seg(minf0_seg<0)=0;
     
 % SET SEGEMENTS WITHOUT A FPROM CURVE TO THE VALUE OF THE NEAREST-NEIGHBOURING SEGMENT (PREFERRING LEFT) 
@@ -77,8 +81,20 @@ function [ minf0_hop, minf0_seg,T_minf0_seg,Fprom_hop] = yb_minf0( audio,fs,ssiz
             minf0_seg(nseg)=minf0_seg(nonZero(nn));
         end
     end 
+    
+% CONVERT TO NEAREST (LOWEST) POSSIBLE MIN FREQUENCY FOR YIN
+    % explanation: YIN sets the minimum frequency in the lag domain,
+    % and the rounded lag values include a range of frequencies.
+    % (see line 47 the 'yink' function in the 'private' folder of  
+    % yin to see where this is done by yin).
+    maxLag_seg=ceil(fs./minf0_seg)-2;
+    minf0_seg=fs./maxLag_seg;
+    
+% SET IN HOPS FOR VISUALIZATION WITH THE PITCH CURVE    
     minf0_hop=repelem(minf0_seg,ssize);
-    minf0_hop(end:length(Tsp))=minf0_hop(end);
-        
+    
+% designate the minf0 of the last portion of the signal that does
+% not fill a full segment as the value of the last full segment
+    minf0_hop(end:length(T))=minf0_hop(end); 
 end
 
