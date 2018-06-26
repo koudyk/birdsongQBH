@@ -87,7 +87,7 @@ function [ minf0_hop, minf0_seg,T_minf0_seg,Fprom_hop] = yb_minf0( audio,fs,ssiz
     % and the rounded lag values include a range of frequencies.
     % (see line 47 the 'yink' function in the 'private' folder of  
     % yin to see where this is done by yin).
-    maxLag_seg=ceil(fs./minf0_seg)-2;
+    maxLag_seg=ceil(fs./minf0_seg);
     minf0_seg=fs./maxLag_seg;
     
 % SET IN HOPS FOR VISUALIZATION WITH THE PITCH CURVE    
