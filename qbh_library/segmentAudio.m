@@ -31,6 +31,10 @@ anno=load(annotation);
 begs=floor(anno(:,1)*fs); % beginnings of segments
 lens=floor(anno(:,3)*fs); % lengths
 fins=begs+lens; % ends of segments
+if begs(1)==0
+    begs(1)=1;
+end
+
 if fins(end)>length(a)
     fins(end)=length(a);
 end
@@ -42,15 +46,10 @@ for nseg=1:Nseg
     seg=a(begs(nseg):fins(nseg));
     segs{nseg,1}=seg;
     if saveSegments==1, 
-        fileName= ['SEG_' annotation(1:end-4) '_' num2str(nseg) '_' num2str(fs)];
+        fileName= ['clean_' annotation(1:end-4) '_' num2str(nseg) '_' num2str(fs)];
         save(fileName,'seg')
     end
     
 end
-  
-    
-% % METADATA
-% meta.id=annotation(2:end-4);
-% meta.lens
 end
 
