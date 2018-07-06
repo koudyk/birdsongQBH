@@ -23,6 +23,56 @@ while isnan(ptp)
     ptp=str2double(input('Please enter your participant number and then press Enter : ','s'));
 end
 
+
+% REAL DEAL
+rdn=randperm(length(d)); % random order of stimulus presentation
+for nna=1:3 %length(d),
+    na=rdn(nna);
+   % PLAY BIRDSONG
+    clc,disp('Loading...')
+    [a_b,fs_b]=audioread([num2str(d(na).id) '.wav']); 
+    if na==1, k=input('Press Enter when ready to hear audio. ');
+    else k=input('Press Enter when ready to hear next audio. ');
+    end
+    sound(a_b(1:play_len*fs_b),fs_b)
+    pause(play_len)
+
+    % RECORD QUERY
+    clc,disp('Recording your imitation in 3'),pause(cp)
+    clc,disp('Recording your imitation in 2'),pause(cp)
+    clc,disp('Recording your imitation in 1'),pause(cp)
+    clc,sound(beep,beep_fs),pause(beep_len),disp('Recording...')
+    recordblocking(recObj,rec_len)
+    pause(2)
+
+    % SAVE QUERY        
+    disp('Done recording, thank you. Saving...')
+    a_q=getaudiodata(recObj);
+    queryName=[sprintf('ptp%03d',ptp)...
+        '_xc' sprintf('%08d',d(na).id)...
+        '_t' datestr(now,'yyyy-mm-dd-HH-MM-SS')...
+        '.wav'];
+    audiowrite(queryName,a_q,fs_q);
+    pause(2)  
+end 
+
+k=input(['Thank you very much for participating! '...
+    'Please get the experimenter and inform them you are done.']);  
+
+list=dir([sprintf('ptp%03d',ptp) '*']); % list of queries for given participant
+destination='F:\0.birdsongQBH\audio\queries_backupTest_b12_2'; % destination for back-up copies of queries
+for nq=1:length(list)
+    clc,disp([num2str(nq) '/' num2str(length(list))])
+    file=list(nq).name;
+    copyfile(file,destination);
+end
+    
+
+
+
+
+
+
 % %INSTRUCTIONS
 % clc,input(['Thank you for participating in this experiment. '...
 %     'For each trial, you will hear a recording of birdsong and then '...
@@ -70,53 +120,6 @@ end
 %     'If you have any questions or concerns, please contact the '...
 %     'experimenter at this time. If you are ready to proceed to the '...
 %     'experiment, press Enter.']);  
-
-
-
-% REAL DEAL
-rdn=randperm(length(d)); % random order of stimulus presentation
-for nna=1:3 %length(d),
-    na=rdn(nna);
-   % PLAY BIRDSONG
-    clc,disp('Loading...')
-    [a_b,fs_b]=audioread([num2str(d(na).id) '.wav']); 
-    if na==1, k=input('Press Enter when ready to hear audio. ');
-    else k=input('Press Enter when ready to hear next audio. ');
-    end
-    sound(a_b(1:play_len*fs_b),fs_b)
-    pause(play_len)
-
-    % RECORD QUERY
-    clc,disp('Recording your imitation in 3'),pause(cp)
-    clc,disp('Recording your imitation in 2'),pause(cp)
-    clc,disp('Recording your imitation in 1'),pause(cp)
-    clc,sound(beep,beep_fs),pause(beep_len),disp('Recording...')
-    recordblocking(recObj,rec_len)
-    pause(2)
-
-    % SAVE QUERY        
-    disp('Done recording, thank you. Saving...')
-    a_q=getaudiodata(recObj);
-    queryName=[sprintf('ptp%03d',ptp)...
-        '_xc' sprintf('%08d',d(na).id)...
-        '_t' datestr(now,'yyyy-mm-dd-HH-MM-SS')...
-        '.wav'];
-    audiowrite(queryName,a_q,fs_q);
-    pause(2)  
-end 
-
-k=input(['Thank you very much for participating! '...
-    'Please get the experimenter and inform them you are done.']);  
-
-list=dir([sprintf('ptp%03d',ptp) '*']); % list of queries for given participant
-destination='F:\0.birdsongQBH\audio\queries_backupTest_b12_2'; % destination for back-up copies of queries
-for nq=1:length(list)
-    clc,disp([num2str(nq) '/' num2str(length(list))])
-    file=list(nq).name;
-    copyfile(file,destination);
-end
-    
-
 
 
 
