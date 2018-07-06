@@ -1,74 +1,69 @@
-function [ out ] = segmentPitchCurve( audio,fs )
-
-if ischar(audio)
-[a,fs] = audioread(audio);
-else a = audio;
-    if nargin<2 || isempty(fs), disp('Missing sampling rate'), end
-end
-a = mean(a,2); % take mean of the two channels if there are 2 
-
-% xx=10;
-subplot(3,1,1)
-[r, fig]=yb_yinbird(a,fs);
-f0=r.f0yinbird_hz;
-
-thresh=.2;
-
-shift=1;
-f0right=[zeros(1,shift) f0];
-f0left=[f0 zeros(1,shift) ];
-chg=abs(f0left-f0right);
-chg=chg(shift:shift-1+length(f0));
-chg=(chg/max(chg));
-chg(chg<.5)=0;
-
-chg=(chg>0).* (.9);
-chg=1-chg;
+function [ segments,fig ] = segmentPitchCurve( pitchCurve,maxGap_sec,minLength_sec,wsize_sec,hop_pwin,fs )
+% segmentPitchCurve - segments a pitch curve based on two parameters:
+% 1) a maximum allowable gap between pieces of the pitch curve, and 
+% 2) a minimum allowable length for a piece to be considered a pitch
+% curve.
+%
+% INPUTS
+% pitchCurve - pitch curve (could be in octaves or Hz - it doesn't
+%       make a difference).
+% maxGap_sec - (sec) maximum allowable gap between pieces of the 
+%       pitch curve before they are separated into different segments.
+% minLength_sec - (sec) mimimum length of a segment for it to be
+%       kept in the set of segments.
+% wsize_sec - (sec) window size that was used for calculating the
+%       pitch curve.
+% hop_pwin - (proportion of window) hop size that was used for 
+%       calculating the pitch curve.
+% fs - (samples/sec) sampling frequency of audio
+%
+% OUTPUTS
+% segments - segments of the pitch curve (in same pitch units as the
+%       input pitchCurve, i.e., octaves or Hz).
 
 
-ap0=r.ap0;
-pwr=r.pwr;
+    f0=pitchCurve;
+    if isempty(f0)
+        disp('Error: no pitch curve detected')
+    end
+%     fs=44100;
+%     maxGap_sec=.05;
+%     minLength_sec=.01;
+    wsize = floor(fs*wsize_sec);
+    hop = floor(wsize*hop_pwin);
+    maxGap_hop = floor(maxGap_sec*fs/hop);
+    minLength_hop = floor(minLength_sec*fs / hop);
 
-% ap0=sqrt(ap0);
-% pwr=sqrt(pwr);
+    notNan=find(~isnan(f0)); % indexes of elements of the pitch curve that are not NaN
+    gaps=[notNan 0]-[0 notNan];
+    
+% SEGMENT PITCH CURVE AT LARGE ENOUGH GAPS IN TIME
+    i_bigGapsFins=find(gaps>maxGap_hop); % notNan indexes of the ends of gaps (i.e., beginning of segments)
+    begs=notNan(i_bigGapsFins);  % pitch curve indexes of beginnings of segments
 
-temp=((1*ap0) + (0*pwr));
-% temp=temp./ (chg);
+    i_bigGapBegs=i_bigGapsFins(2:end)-1; % notNan indexes of the beginnings of gaps
+    fins=notNan(i_bigGapBegs); % pitch curve indexes of ends of segments
+    fins(end+1)=abs(gaps(end));
 
-% SMOOTH
-% wsize=3;
-% hop=1;
-% for nwin=1:length(temp)-wsize
-%     place=nwin+floor(wsize/2);
-%     beg=nwin*hop-hop+1;
-%     win=temp(beg:beg+wsize-1);
-%     comb(place)=mean(win);
-% end
-% comb(end:length(f0))=comb(end);
-comb=temp;
-comb=comb./ (chg);
+% JOIN PITCH CURVES THAT ARE TOO SHORT
+    i_tooShort=find((fins-begs)<minLength_hop);
+    begs(i_tooShort)=[];
+    fins(i_tooShort)=[];
+    
+    Nseg=length(begs);
+    segments=cell(Nseg,1);
+    
+    for nseg=1:Nseg
+        segments{nseg}=f0(begs(nseg) : fins(nseg));
+    end
+    
+    if nargout==2, % if they want a figure
+        fig=figure; 
+        for nseg=1:Nseg
+            subplot(ceil(Nseg/2),2,nseg)
+            plot(segments{nseg})
+        end
+    end
 
-f0_seg=f0;
-f0_seg(ap0>            thresh          )=NaN;
-
-f0_seg2=f0;
-f0_seg2(comb>            thresh          )=NaN;
-
-hold on, plot(r.timescale_sec,f0_seg,'k','linewidth',2)
-
-subplot(3,1,2)
-[~,fig]=yb_yinbird(a,fs);
-hold on, plot(r.timescale_sec,f0_seg2,'k','linewidth',2)
-
-subplot(3,1,3),plot(r.timescale_sec,ap0)
-%hold on, plot(r.timescale_sec,pwr)
-hold on, plot(r.timescale_sec,chg)
-hold on, plot(r.timescale_sec,comb)
-hold on, plot(r.timescale_sec,thresh*ones(size(r.timescale_sec)))
-xlim([0 length(a)/fs])
-ylim([0 1])
-legend('aperiodicity','change','combination','threshold')
-
-out=1;
 end
 
