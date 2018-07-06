@@ -36,17 +36,18 @@ function [ minf0_hop, minf0_seg,T_minf0_seg,Fprom_hop] = yb_minf0( audio,fs,ssiz
         if nargin<2 || isempty(fs), disp('Missing sampling rate'), end
     end
     a=mean(a,2); % take mean of the two channels if there are 2 
-    if nargin<7 || isempty(hop_pwin), hop_pwin=.5; end % proportion of window size; hop factor
-    if nargin<6 || isempty(wsize_sec), wsize_sec=.01; end % sec; window size
-    if nargin<5 || isempty(fmax_hz), fmax_hz=fs/2; end % Hz; max frequency
-    if nargin<4 || isempty(fmin_hz), fmin_hz=30; end % Hz; min frequency (recommended by YIN-bird (O'Reilley & Harte, 2017))
-    if nargin<3 || isempty(ssize_sec), ssize_sec=.068; end % sec; segment size for dynamically setting the minimum f0 for YIN
-    
+%     if nargin<7 || isempty(hop_pwin), hop_pwin=.1; end % proportion of window size; hop factor
+%     if nargin<6 || isempty(wsize_sec), wsize_sec=.01; end % sec; window size
+%     if nargin<5 || isempty(fmax_hz), fmax_hz=fs/2; end % Hz; max frequency
+%     if nargin<4 || isempty(fmin_hz), fmin_hz=30; end % Hz; min frequency (recommended by YIN-bird (O'Reilley & Harte, 2017))
+%     if nargin<3 || isempty(ssize_sec), ssize_sec=.068; end % sec; segment size for dynamically setting the minimum f0 for YIN
+%     
 % PROMINENT-FREQUENCY CURVE
     %[Psp,Fsp,Tsp]=yb_spectrogram(audio,fs,fmin_hz,fmax_hz,wsize_sec,hop_pwin );
     wsize=floor(wsize_sec*fs);
     hop=floor(wsize*hop_pwin);
-    [~,F,T,P]=spectrogram(a,wsize,hop,wsize,fs);
+    overlap=wsize-hop;
+    [~,F,T,P] = spectrogram(a,wsize,overlap,[],fs);
     hop_sec=T(2)-T(1); % sec; spectrogram hop size (i.e., seconds to one time value in spectrogram)
     %hop_samples=floor(hop_sec*fs); % audio samples; spectrogram hop size (i.e., audio samples to one time value in spectrogram)
     fs_sp=1/hop_sec;
@@ -74,13 +75,16 @@ function [ minf0_hop, minf0_seg,T_minf0_seg,Fprom_hop] = yb_minf0( audio,fs,ssiz
     
 % SET SEGEMENTS WITHOUT A FPROM CURVE TO THE VALUE OF THE NEAREST-NEIGHBOURING SEGMENT (PREFERRING LEFT) 
     nonZero=find(minf0_seg>0);
-    for nseg=1:Nseg
-        if minf0_seg(nseg)==0;
-            dif=abs(nonZero-nseg);
-            [~,nn]=min(dif); % nearest neighbour
-            minf0_seg(nseg)=minf0_seg(nonZero(nn));
-        end
-    end 
+    if ~isempty(nonZero)
+        for nseg=1:Nseg
+            if minf0_seg(nseg)==0;
+                dif=abs(nonZero-nseg);
+                [~,nn]=min(dif); % nearest neighbour
+                minf0_seg(nseg)=minf0_seg(nonZero(nn));
+            end
+        end 
+    else minf0_seg(1:Nseg)=zeros;
+    end
     
 % CONVERT TO NEAREST (LOWEST) POSSIBLE MIN FREQUENCY FOR YIN
     % explanation: YIN sets the minimum frequency in the lag domain,
