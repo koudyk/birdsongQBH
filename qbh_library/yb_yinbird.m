@@ -37,12 +37,12 @@ else a = audio;
     if nargin<2 || isempty(fs), disp('Missing sampling rate'), end
 end
 a = mean(a,2); % take mean of the two channels if there are 2 
-% if nargin<9|| isempty(hop_pwin), hop_pwin = .5; end % proportion of window size; hop factor
-% if nargin<8 || isempty(wsize_sec), wsize_sec = .01; end % sec; window size
-% if nargin<7 || isempty(fmax_hz), fmax_hz = 10000; end % Hz; max frequency
-% if nargin<6 || isempty(fmin_hz), fmin_hz = 30; end % Hz; min frequency (recommended by YIN-bird (O'Reilley & Harte, 2017))
-% if nargin<5 || isempty(ssize_sec), ssize_sec = .068; end % sec; segment size for dynamically setting the minimum f0 for YIN
-% if nargin<3 || isempty(quality),quality=1; end % quality; 1='good', 2='best', 0=raw (including pitch estimates at times when the signal is deemed aperiodic)
+if nargin<9|| isempty(hop_pwin), hop_pwin = .1; end % proportion of window size; hop factor
+if nargin<8 || isempty(wsize_sec), wsize_sec = .02; end % sec; window size
+if nargin<7 || isempty(fmax_hz), fmax_hz = 10000; end % Hz; max frequency
+if nargin<6 || isempty(fmin_hz), fmin_hz = 30; end % Hz; min frequency (recommended by YIN-bird (O'Reilley & Harte, 2017))
+if nargin<5 || isempty(ssize_sec), ssize_sec = .068; end % sec; segment size for dynamically setting the minimum f0 for YIN
+if nargin<3 || isempty(quality),quality=1; end % quality; 1='good', 2='best', 0=raw (including pitch estimates at times when the signal is deemed aperiodic)
 
 p.sr = fs;
 wsize = floor(fs*wsize_sec); p.wsize = wsize;% samples; window size
