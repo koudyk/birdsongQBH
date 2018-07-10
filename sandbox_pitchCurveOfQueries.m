@@ -17,10 +17,6 @@ hop_pwin=.1;
 Nspec=10;
 Nrec=10;
 
-%%
-
-clear f0
-
 for nspec=1:Nspec
     fprintf('--------------- nspec = %d ---------------\n',nspec)
     for nrec=1:10
