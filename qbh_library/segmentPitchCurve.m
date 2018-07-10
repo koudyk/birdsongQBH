@@ -1,4 +1,4 @@
-function [ segments,fig ] = segmentPitchCurve( pitchCurve,maxGap_sec,minLength_sec,wsize_sec,hop_pwin,fs )
+function [ segments,fig ] = segmentPitchCurve( pitchCurve,maxGap_sec,minLength_sec,hop_samples,fs )
 % segmentPitchCurve - segments a pitch curve based on two parameters:
 % 1) a maximum allowable gap between pieces of the pitch curve, and 
 % 2) a minimum allowable length for a piece to be considered a pitch
@@ -11,11 +11,9 @@ function [ segments,fig ] = segmentPitchCurve( pitchCurve,maxGap_sec,minLength_s
 %       pitch curve before they are separated into different segments.
 % minLength_sec - (sec) mimimum length of a segment for it to be
 %       kept in the set of segments.
-% wsize_sec - (sec) window size that was used for calculating the
+% hop_samples - (audio samples) hop size used in calculating the 
 %       pitch curve.
-% hop_pwin - (proportion of window) hop size that was used for 
-%       calculating the pitch curve.
-% fs - (samples/sec) sampling frequency of audio
+% fs - (Hz) sampling frequency of audio
 %
 % OUTPUTS
 % segments - segments of the pitch curve (in same pitch units as the
@@ -26,13 +24,9 @@ function [ segments,fig ] = segmentPitchCurve( pitchCurve,maxGap_sec,minLength_s
     if isempty(f0)
         disp('Error: no pitch curve detected')
     end
-%     fs=44100;
-%     maxGap_sec=.05;
-%     minLength_sec=.01;
-    wsize = floor(fs*wsize_sec);
-    hop = floor(wsize*hop_pwin);
-    maxGap_hop = floor(maxGap_sec*fs/hop);
-    minLength_hop = floor(minLength_sec*fs / hop);
+
+    maxGap_hop = floor(maxGap_sec*fs/hop_samples);
+    minLength_hop = floor(minLength_sec*fs / hop_samples);
 
     notNan=find(~isnan(f0)); % indexes of elements of the pitch curve that are not NaN
     gaps=[notNan 0]-[0 notNan];
