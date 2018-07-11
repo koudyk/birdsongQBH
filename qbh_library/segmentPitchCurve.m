@@ -19,6 +19,14 @@ function [ segments,fig ] = segmentPitchCurve( pitchCurve,maxGap_sec,minLength_s
 % segments - segments of the pitch curve (in same pitch units as the
 %       input pitchCurve, i.e., octaves or Hz).
 
+% PITCH CURVE MUST BE A ROW VECTOR
+if ~isrow(pitchCurve),pitchCurve = pitchCurve'; end
+
+
+if nargin<5 || isempty(fs), fs=44100; end
+if nargin<4 || isempty(hop_samples), hop_samples=82; end
+if nargin<3 || isempty(minLength_sec), minLength_sec=.01; end
+if nargin<2 || isempty(maxGap_sec), maxGap_sec=.01; end
 
     f0=pitchCurve;
     if isempty(f0)
