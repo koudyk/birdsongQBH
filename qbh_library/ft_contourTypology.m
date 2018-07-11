@@ -1,6 +1,8 @@
-function [ fb_ct, label ] = ft_contourTypology( pc_segs )
+function [ fct, label ] = ft_contourTypology( pc_segs )
 % ft_countourTypology - categorize the type of contour in the pitch
 % curve using Adam's (1976) 15 categories of melodic contour
+% typologies
+
 % typologies.
 %
 % The types are defined in Table 3 on p. 196 of:
@@ -8,7 +10,7 @@ function [ fb_ct, label ] = ft_contourTypology( pc_segs )
 % https://www.jstor.org/stable/pdf/851015.pdf
 %
 % and they were used for pitch-curve classelseification in 
-% Salamon, J., Rocha, B. M. M., & Gómez, E. (2012, March). 
+% Salamon, J., Rocha, B. M. M., & G?mez, E. (2012, March). 
 %   Musical genre classelseification using melody features extracted 
 %   from polyphonic music signals. In ICASSP (pp. 81-84).
 %
@@ -19,12 +21,20 @@ function [ fb_ct, label ] = ft_contourTypology( pc_segs )
 % OUTPUTS
 % contourType - an integer between 1 and 12 indicating the type of
 %       contour in the pitch curve.
-
-fb_ct = zeros(1,12);
-fb_ct = zeros(1,12);
 Nseg = length(pc_segs);
-for nseg=1:Nseg
-    pc_cents=pc_segs{nseg};
+ct_segs = zeros(Nseg,12);
+
+for nseg=1:Nseg + 1
+    
+    if nseg<=Nseg
+        pc_cents=pc_segs{nseg};
+    else 
+        pc_cents=[];
+    for nseg=1:Nseg
+        pc_cents=[pc_cents pc_segs{nseg}];
+    end
+    pc_cents(isnan(pc_cents))=[];
+    end
 
     % QUANTIZE PITCH TO AVOID SMALL PITCH VARIATIONS AFFECTING THE CONTOUR
     % TYPE (as done by Salamon, Rocha, and Gomez (2012))
@@ -35,28 +45,28 @@ for nseg=1:Nseg
     H = max(pc); % HIGHEST pitch
     L = min(pc); % LOWEST pitch
 
-    
-    if     H==I && I> F && F==L, fb_ct(1) = fb_ct(1) +1;  
-    elseif H> I && I> F && F==L, fb_ct(2) = fb_ct(2) +1;  
-    elseif H==I && I> F && F> L, fb_ct(3) = fb_ct(3) +1;  
-    elseif H> I && I> F && F> L, fb_ct(4) = fb_ct(4) +1;  
+    if     H==I && I> F && F==L, ct_segs(nseg,1) = 1; 
+    elseif H> I && I> F && F==L, ct_segs(nseg,2) = 1;  
+    elseif H==I && I> F && F> L, ct_segs(nseg,3) = 1;   
+    elseif H> I && I> F && F> L, ct_segs(nseg,4) = 1;  
 
-    elseif H==I && I==F && F==L, fb_ct(5) = fb_ct(5) +1;  
-    elseif H> I && I==F && F==L, fb_ct(6) = fb_ct(6) +1;  
-    elseif H==I && I==F && F> L, fb_ct(7) = fb_ct(7) +1;  
-    elseif H> I && I==F && F> L, fb_ct(8) = fb_ct(8) +1;  
+    elseif H==I && I==F && F==L, ct_segs(nseg,5) = 1; 
+    elseif H> I && I==F && F==L, ct_segs(nseg,6) = 1;  
+    elseif H==I && I==F && F> L, ct_segs(nseg,7) = 1;   
+    elseif H> I && I==F && F> L, ct_segs(nseg,8) = 1; 
 
-    elseif L==I && I< F && F==H, fb_ct(9)  = fb_ct(9) +1;   
-    elseif L==I && I< F && F< H, fb_ct(10) = fb_ct(10) +1; 
-    elseif L< I && I< F && F==H, fb_ct(11) = fb_ct(11) +1; 
-    elseif L< I && I< F && F< H, fb_ct(12) = fb_ct(12) +1; 
+    elseif L==I && I< F && F==H, ct_segs(nseg,9) = 1;  
+    elseif L==I && I< F && F< H, ct_segs(nseg,10) = 1; 
+    elseif L< I && I< F && F==H, ct_segs(nseg,11) = 1; 
+    elseif L< I && I< F && F< H, ct_segs(nseg,12) = 1; 
 
     else disp('ERROR: missing contour types in function')
     end
 
 end
 
-fb_ct = fb_ct/Nseg;
+fct=sum(ct_segs(1:Nseg,:));
+fct =[fct ct_segs(Nseg+1,:)];
 
 label={'H=I>F=L',...
     'H>I>F=L',...

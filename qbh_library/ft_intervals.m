@@ -43,7 +43,7 @@ function [ featVect_interval, label, mu_i, sigma_i, skewness_i, kurtosis_i ] =..
     end
 
 % INTERVAL FEATURES
-    intervals = begs(2:end) - fins(1:end-1);
+    intervals = abs(begs(2:end) - fins(1:end-1));
     mu_i = mean(intervals);
     sigma_i = std(intervals);
     skewness_i = skewness(intervals);
