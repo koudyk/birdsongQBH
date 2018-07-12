@@ -1,4 +1,4 @@
-function [ fct, label ] = ft_contourTypology( pc_segs )
+function [ fct, label ] = ft_contourTypology( pc_original )
 % ft_countourTypology - categorize the type of contour in the pitch
 % curve using Adam's (1976) 15 categories of melodic contour
 % typologies
@@ -21,65 +21,89 @@ function [ fct, label ] = ft_contourTypology( pc_segs )
 % OUTPUTS
 % contourType - an integer between 1 and 12 indicating the type of
 %       contour in the pitch curve.
-Nseg = length(pc_segs);
-ct_segs = zeros(Nseg,12);
 
-for nseg=1:Nseg + 1
-    
-    if nseg<=Nseg
-        pc_cents=pc_segs{nseg};
-    else 
-        pc_cents=[];
-    for nseg=1:Nseg
-        pc_cents=[pc_cents pc_segs{nseg}];
+
+
+% QUANTIZE PITCH TO AVOID SMALL PITCH VARIATIONS AFFECTING THE CONTOUR
+% TYPE (as done by Salamon, Rocha, and Gomez (2012))
+%pc_semitones = round(pc_original/100); % cents to semitones 
+
+% SEGMENT AND CONCATENATE PITCH CURVE
+[pc_seg, pc_concat] = pc_segConcat(pc_original);
+%[pc_seg, pc_concat] = pc_segConcat(pc_semitones);
+Nseg=length(pc_seg);
+
+if ~isempty(pc_concat)
+% CONCOUR TYPOLOGY FOR SEGMENTS AND FOR CONCATENATED SEGMENTS
+    ct = zeros(Nseg,12);
+    for nseg=1:Nseg + 1 % plus one because the final one is the concatenated segments
+    % SPECIFY PITCH CURVE TO BE CLASSIFIED    
+        if nseg<=Nseg, pc=pc_seg{nseg};
+        else pc=pc_concat;
+        end
+
+    % CALCULATE POINTS USED FOR CLASSIFICATION
+        I = pc(1); % INITIAL pitch
+        F = pc(end); % FINAL pitch
+        H = max(pc); % HIGHEST pitch
+        L = min(pc); % LOWEST pitch
+
+    % CLASSIFY
+        if     H==I && I> F && F==L, ct(nseg,1) = 1; 
+        elseif H> I && I> F && F==L, ct(nseg,2) = 1;  
+        elseif H==I && I> F && F> L, ct(nseg,3) = 1;   
+        elseif H> I && I> F && F> L, ct(nseg,4) = 1;  
+
+        elseif H==I && I==F && F==L, ct(nseg,5) = 1; 
+        elseif H> I && I==F && F==L, ct(nseg,6) = 1;  
+        elseif H==I && I==F && F> L, ct(nseg,7) = 1;   
+        elseif H> I && I==F && F> L, ct(nseg,8) = 1; 
+
+        elseif L==I && I< F && F==H, ct(nseg,9) = 1;  
+        elseif L==I && I< F && F< H, ct(nseg,10) = 1; 
+        elseif L< I && I< F && F==H, ct(nseg,11) = 1; 
+        elseif L< I && I< F && F< H, ct(nseg,12) = 1; 
+
+        else disp('ERROR: missing contour types in function')
+        end
+
     end
-    pc_cents(isnan(pc_cents))=[];
+    if Nseg>1;
+        fct1=sum(ct(1:Nseg,:))/Nseg;
+    else fct1 = ct(1,:);
     end
-
-    % QUANTIZE PITCH TO AVOID SMALL PITCH VARIATIONS AFFECTING THE CONTOUR
-    % TYPE (as done by Salamon, Rocha, and Gomez (2012))
-    pc = round(pc_cents/100); % cents to semitones
-
-    I = pc(1); % INITIAL pitch
-    F = pc(end); % FINAL pitch
-    H = max(pc); % HIGHEST pitch
-    L = min(pc); % LOWEST pitch
-
-    if     H==I && I> F && F==L, ct_segs(nseg,1) = 1; 
-    elseif H> I && I> F && F==L, ct_segs(nseg,2) = 1;  
-    elseif H==I && I> F && F> L, ct_segs(nseg,3) = 1;   
-    elseif H> I && I> F && F> L, ct_segs(nseg,4) = 1;  
-
-    elseif H==I && I==F && F==L, ct_segs(nseg,5) = 1; 
-    elseif H> I && I==F && F==L, ct_segs(nseg,6) = 1;  
-    elseif H==I && I==F && F> L, ct_segs(nseg,7) = 1;   
-    elseif H> I && I==F && F> L, ct_segs(nseg,8) = 1; 
-
-    elseif L==I && I< F && F==H, ct_segs(nseg,9) = 1;  
-    elseif L==I && I< F && F< H, ct_segs(nseg,10) = 1; 
-    elseif L< I && I< F && F==H, ct_segs(nseg,11) = 1; 
-    elseif L< I && I< F && F< H, ct_segs(nseg,12) = 1; 
-
-    else disp('ERROR: missing contour types in function')
-    end
-
+    fct =[fct1 ct(Nseg+1,:)]';
+else fct=zeros(24,1);
 end
 
-fct=sum(ct_segs(1:Nseg,:));
-fct =[fct ct_segs(Nseg+1,:)];
-
-label={'H=I>F=L',...
-    'H>I>F=L',...
-    'H=I>F>L',...
-    'H>I>F>L',...
+label={'Proportion of segments with contour type H=I>F=L',...
+    'Proportion of segments with contour type H>I>F=L',...
+    'Proportion of segments with contour type H=I>F>L',...
+    'Proportion of segments with contour type H>I>F>L',...
     ...
-    'H=I=F=L',...
-    'H>I=F=L',...
-    'H=I=F>L',...
-    'H>I=F>L',...
+    'Proportion of segments with contour type H=I=F=L',...
+    'Proportion of segments with contour type H>I=F=L',...
+    'Proportion of segments with contour type H=I=F>L',...
+    'Proportion of segments with contour type H>I=F>L',...
     ...
-    'L=I<F=H',...
-    'L=I<F<H',...
-    'L<I<F=H',...
-    'L<I<F<H'};
+    'Proportion of segments with contour type L=I<F=H',...
+    'Proportion of segments with contour type L=I<F<H',...
+    'Proportion of segments with contour type L<I<F=H',...
+    'Proportion of segments with contour type L<I<F<H',...
+    ...
+    ...
+    'Whether concatenated segments are of contour type H=I>F=L',...
+    'Whether concatenated segments are of contour type H>I>F=L',...
+    'Whether concatenated segments are of contour type H=I>F>L',...
+    'Whether concatenated segments are of contour type H>I>F>L',...
+    ...
+    'Whether concatenated segments are of contour type H=I=F=L',...
+    'Whether concatenated segments are of contour type H>I=F=L',...
+    'Whether concatenated segments are of contour type H=I=F>L',...
+    'Whether concatenated segments are of contour type H>I=F>L',...
+    ...
+    'Whether concatenated segments are of contour type L=I<F=H',...
+    'Whether concatenated segments are of contour type L=I<F<H',...
+    'Whether concatenated segments are of contour type L<I<F=H',...
+    'Whether concatenated segments are of contour type L<I<F<H'}';
 end

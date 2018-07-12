@@ -1,5 +1,5 @@
-function [ featVect_interval, label, mu_i, sigma_i, skewness_i, kurtosis_i ] =...
-    ft_intervals( pc_segs )
+function [ fv_i, label, mu_i, sigma_i, skewness_i, kurtosis_i ] =...
+    ft_intervals( pc )
 % ft_global - calculates global features of a pitch curve, 
 % as listed in:
 %
@@ -34,10 +34,15 @@ function [ featVect_interval, label, mu_i, sigma_i, skewness_i, kurtosis_i ] =..
 %     kurtosis_i = 0;
 %   
 % else % if there is more than one segment
-    
+
+% SEGMENT PITCH CURVE
+pc_seg = pc_segConcat(pc);    
+Nseg=length(pc_seg);
+
+if ~isempty(pc_seg)
 % GET BEGINNINGS & ENDS OF SEGMENTS
-    for nseg=1:length(pc_segs)
-        pitchCurve = pc_segs{nseg};
+    for nseg=1:length(pc_seg)
+        pitchCurve = pc_seg{nseg};
         begs(nseg) = pitchCurve(1);
         fins(nseg) = pitchCurve(end);
     end
@@ -49,11 +54,10 @@ function [ featVect_interval, label, mu_i, sigma_i, skewness_i, kurtosis_i ] =..
     skewness_i = skewness(intervals);
     kurtosis_i = kurtosis(intervals);
 
-
-featVect_interval = [mu_i sigma_i skewness_i kurtosis_i];
+    fv_i = [mu_i sigma_i skewness_i kurtosis_i]';
+else fv_i = zeros(4,1);
+end
+    
 label={'mean interval','interval variation',...
-    'interval skewness','interval kurtosis'};
-
-% IF THERE WAS ONLY ONE SEGMENT, SET VALUES TO 0
-featVect_interval(isnan(featVect_interval)) = 0;
+    'interval skewness','interval kurtosis'}';
 end 
