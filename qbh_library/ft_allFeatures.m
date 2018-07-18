@@ -1,24 +1,24 @@
-function [ featureVector, label] = ft_allFeatures(pc, ...
-    hop_samples, fs_a)
+function [ featureVector, label] = ft_allFeatures(pc, par)
 
-if nargin<4 || isempty(fs_a), fs_a=44100; end % Hz
-if nargin<3 || isempty(hop_samples), hop_samples=82; end
-fsize_sec=.35; 
+if nargin<2, par.fs = 44100; end
+if ~isfield(par,'fs'),         par.fs = 44100; end,        
+if ~isfield(par,'wsize_sec'),  par.wsize_sec = .02; end,   
+if ~isfield(par,'hop_pwin'),   par.hop_pwin = .1; end,     
 
 % PITCH/DURATION FEATURES
-[fpd, label_fpd] = ft_pitch_duration( pc, hop_samples, fs_a );
+[fpd, label_fpd] = ft_pitch_duration( pc,par );
 
 % VIBRATO FEATURES
-[fv, label_fv] = ft_vibrato(pc,hop_samples,fs_a,fsize_sec);
-
-% CONTOUR TYPOLOGY
-[fct, label_fct] = ft_contourTypology( pc );
+[fv, label_fv] = ft_vibrato(pc,par);
 
 % INTERVAL FEATURES
 [fi, label_fi] = ft_intervals( pc );
 
-featureVector = [fpd; fv; fct; fi;]';
-label = [label_fpd; label_fv; label_fct; label_fi];
+% CONTOUR TYPOLOGY
+[fct, label_fct] = ft_contourTypology( pc );
+
+featureVector = [fpd; fv; fi; fct;]';
+label = [label_fpd; label_fv; label_fi; label_fct];
 
 end
 
