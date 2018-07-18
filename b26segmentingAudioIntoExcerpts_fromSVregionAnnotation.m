@@ -17,11 +17,18 @@ for nspec=1:10
     list_anno=dir(sprintf('spc%02d*.txt',nspec));
     for nanno=1:length(list_anno)
         disp(nanno)
-        [a,fs]=audioread([list_anno(nanno).name(1:end-4) '.wav']);
-        audio_excerpts{nanno}=segmentAudio(a,list_anno(nanno).name,0,fs);
+        [x,fs]=audioread([list_anno(nanno).name(1:end-4) '.wav']);
+        x=mean(x,2);
+        
+        % normalize volume
+        x_centered = x - mean(x);
+        power = norm(x_centered) / length(x_centered);
+        x_normalized = x_centered / power;
+        
+        audio_excerpts{nanno}=segmentAudio(x,list_anno(nanno).name,0,fs);
         xcID(nanno)=str2double(list_anno(nanno).name(9:end-4));
     end
-    file=sprintf('audio_cleanExcerpts_spc%02d',nspec);
+     file=sprintf('audio_cleanExcerpts_spc%02d',nspec);
      save(file,'audio_excerpts','xcID','-v7.3')
     
     
