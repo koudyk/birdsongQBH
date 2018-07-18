@@ -1,4 +1,4 @@
-function [ segs ] = segmentAudio( audio,annotation,saveSegments,fs )
+function [ segs, locs] = extractAudioExcerpts( audio,annotation,saveSegments,fs )
 % INPUTS
 %   audio - waveform or audio file (in format readable by audioread)
 %   SVannotation - Sonic Visualizer regions annotation layer text file.
@@ -51,5 +51,7 @@ for nseg=1:Nseg
     end
     
 end
+
+locs=[begs fins];
 end
 
