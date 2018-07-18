@@ -57,7 +57,7 @@ if ~isempty(pc_seg)
     fv_i = [mu_i sigma_i skewness_i kurtosis_i]';
 else fv_i = zeros(4,1);
 end
-    
+    fv_i(isnan(fv_i))=0;
 label={'mean interval','interval variation',...
     'interval skewness','interval kurtosis'}';
 end 

@@ -1,4 +1,4 @@
-function [ fv_pd, label] = ft_pitch_duration( pc, hop_a_samples, fs_a )
+function [ fv_pd, label] = ft_pitch_duration( pc, par )
 
 % ft_pitch_duration - calculates the pitch- and duration-related
 % features of a pitch curve, as listed in:
@@ -7,9 +7,13 @@ function [ fv_pd, label] = ft_pitch_duration( pc, hop_a_samples, fs_a )
 %   Musical genre classification using melody features extracted 
 %   from polyphonic music signals. In ICASSP (pp. 81-84).
 %
+if nargin<2, par.fs = 44100; end
 
-if nargin<3 || isempty(fs_a), fs_a=44100; end
-if nargin<2 || isempty(hop_a_samples), hop_a_samples=82; end
+if ~isfield(par,'fs'),         par.fs = 44100; end,         fs = par.fs;
+if ~isfield(par,'wsize_sec'),  par.wsize_sec = .02; end,    wsize_sec = par.wsize_sec;
+if ~isfield(par,'hop_pwin'),   par.hop_pwin = .1; end,      hop_pwin = par.hop_pwin;
+
+hop_a_samp = floor(floor(fs*wsize_sec)*hop_pwin); % hop size for calculating the spectrogram from the audio, in samples
 
 % SEGMENT AND CONCATENATE PITCH CURVE
 [pc_seg, pc_concat] = pc_segConcat(pc);
@@ -28,7 +32,7 @@ tv_perSeg = temp;
 for nseg=1:Nseg
     pc = pc_seg{nseg};
     N = length(pc);
-    t_perSeg(nseg) = N * hop_a_samples / fs_a;
+    t_perSeg(nseg) = N * hop_a_samp / fs;
     mu_p_perSeg(nseg) = nanmean(pc); 
     sigma_p_perSeg(nseg) = nanstd(pc); 
     r_p_perSeg(nseg) = max(pc) - min(pc); 
@@ -42,7 +46,7 @@ Mtv = mean(tv_perSeg);
 
 % FEATURES FOR CONCATENATED SEGMENTS
 N = length(pc_concat);
-t = N * hop_a_samples / fs_a; % duration (sec)
+t = N * hop_a_samp / fs; % duration (sec)
 mu_p = mean(pc_concat); % mean pitch height (cents)
 sigma_p = std(pc_concat); % pitch deviation (cents)
 r_p = max(pc_concat) - min(pc_concat); % pitch range (cents)

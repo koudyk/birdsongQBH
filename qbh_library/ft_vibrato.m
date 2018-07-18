@@ -1,6 +1,4 @@
-function [ featVect_vibrato, label, v_r, v_e, v_c, vibrato_presence] = ...
-    ft_vibrato( pc,hop_a_samples,fs_a,...
-    fsize_sec)
+function [ fv_v, label, v_r, v_e, v_c, vibrato_presence] = ft_vibrato( pc,par)
 % ft_vibrato - calculates the vibrato-related features of a pitch
 % curve, as listed in:
 %
@@ -27,37 +25,45 @@ function [ featVect_vibrato, label, v_r, v_e, v_c, vibrato_presence] = ...
 % vibrato_presence - (boolean) indicates whether the segment contains
 %       vibrato (1) or not (0)
 
-%hop_sec = hop_samples/fs_a; 
-if nargin<4 || isempty(fsize_sec), fsize_sec=.35; end
-if nargin<3 || isempty(fs_a), fs_a=44100; end
-if nargin<2 || isempty(hop_a_samples), hop_a_samples=82; end
+if nargin<2, par.fs = 44100; end
+
+if ~isfield(par,'fs'),         par.fs = 44100; end,         fs_a = par.fs;
+if ~isfield(par,'wsize_sec'),  par.wsize_sec = .02; end,    wsize_sec = par.wsize_sec;
+if ~isfield(par,'hop_pwin'),   par.hop_pwin = .1; end,      hop_pwin = par.hop_pwin;
+if ~isfield(par,'vsize_sec'),   par.vsize_sec = .35; end,    vsize_sec = par.vsize_sec;
+if ~isfield(par,'vsize_sec'),   par.vsize_sec = .35; end,    vsize_sec = par.vsize_sec;
+if ~isfield(par,'vsize_sec'),   par.vsize_sec = .35; end,    vsize_sec = par.vsize_sec;
+
+
+
+hop_a_samp = floor(floor(fs_a*wsize_sec)*hop_pwin); % hop size for calculating the spectrogram from the audio, in samples
+
 
 % CONCATENATE SEGMENTED PITCH CURVE
 [~, pc_concat] = pc_segConcat(pc);
 
-fs_pc = floor(fs_a/hop_a_samples); % sampling rate of the pitch curve
-fsize = floor(fsize_sec*fs_pc); % frame size%
-%fhop = floor(fsize*hop_pframe); % hop size for vibrato-calculation frames
-fhop=1;
-freqScale = fs_pc * (0:floor(fsize/2)) /floor(fsize);
+fs_pc = floor(fs_a/hop_a_samp); % sampling rate of the pitch curve
+vsize = floor(vsize_sec*fs_pc); % frame size for calculating vibrato
+vhop=1; % hop for the vibrato-calculation frames
+freqScale = fs_pc * (0:floor(vsize/2)) /floor(vsize);
 minFreq=3; %Hz
 maxFreq=15; %Hz
 [~,i_minFreq] = min(abs(freqScale-minFreq));
 [~,i_maxFreq] = min(abs(freqScale-maxFreq));
-minPower = 1000;
-Nframe = floor( (length(pc_concat)-(fsize-fhop)) / fhop); % total number of frames that fit into the pitch curve
+minPower = 1000; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Nframe = floor( (length(pc_concat)-(vsize-vhop)) / vhop); % total number of frames that fit into the pitch curve
 
 
 v_r_perFrame = zeros(Nframe,1); % VIBRATO RATE per frame
 v_e_perFrame = zeros(Nframe,1); % VIBRATO EXTENT per frame
 v_c_perFrame = zeros(Nframe,1); % VIBRATO COVERAGE per frame
 
-win = hanning(fsize); % hanning window
+win = hanning(vsize); % hanning window
 
 for nframe=1:Nframe
-    beg = nframe * fhop - fhop + 1;
-    frame = pc_concat(beg : beg+fsize-1);
-    win = hanning(fsize); % hanning window
+    beg = nframe * vhop - vhop + 1;
+    frame = pc_concat(beg : beg+vsize-1);
+    win = hanning(vsize); % hanning window
     frame = frame .* win'; 
    
     if ~isempty(frame)
@@ -109,7 +115,8 @@ else
     v_c = 0;
     vibrato_presence = 0;
 end
-featVect_vibrato = [v_r v_rv v_e v_ev v_c]';
+fv_v = [v_r v_rv v_e v_ev v_c]';
+fv_v(isnan(fv_v))=0;
 label={'mean vibrato rate (Hz)','vibrato rate variation (Hz)',...
     'mean vibrato extent','vibrato extent variation',...
     'vibrato coverage (scale 0-1)'}';
