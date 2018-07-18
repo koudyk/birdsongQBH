@@ -46,7 +46,7 @@ for nspec=1:Nspec
     
     speciesFile=sprintf('featureVectors_spc%02d_Nexcerpt-by-Nfeature',nspec);
     save(speciesFile,'featureVectors','featureLabels','nspec','xcID','wsize_sec','ssize_sec',...
-       'hop_pwin','fs','fmin_hz','fmax_hz','tooShort','-v7.3')
+       'hop_pwin','fs','fmin_hz','fmax_hz','-v7.3')
    
     % add to set of feature vectors for all species
     spec = repmat(nspec,size(xcID));
